@@ -37,7 +37,7 @@ namespace Dapper
                 throw new ArgumentException("Get<T> only supports an entity with a [Key] or Id property");
             if (idProps.Count() > 1)
                 throw new ArgumentException("Get<T> only supports an entity with a single [Key] or Id property");
-
+            
             var onlyKey = idProps.First();
             var name = GetTableName(currenttype);
 
@@ -47,6 +47,50 @@ namespace Dapper
             BuildSelect(sb, GetScaffoldableProperties((T)Activator.CreateInstance(typeof(T))).ToArray());
             sb.AppendFormat(" from {0}", name);
             sb.Append(" where " + GetColumnName(onlyKey) + " = @Id");
+
+            var dynParms = new DynamicParameters();
+            dynParms.Add("@id", id);
+
+            if (Debugger.IsAttached)
+                Trace.WriteLine(String.Format("Get<{0}>: {1} with Id: {2}", currenttype, sb, id));
+
+            var query = await connection.QueryAsync<T>(sb.ToString(), dynParms, transaction, commandTimeout);
+            return query.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// <para>By default queries the table matching the class name</para>
+        /// <para>-Table name can be overridden by adding an attribute on your class [Table("YourTableName")]</para>
+        /// <para>By default filters on the Id column</para>
+        /// <para>-Id column name can be overridden by adding an attribute on column [Guid]</para>
+        /// <para>Supports transaction and command timeout</para>
+        /// <para>Returns a single entity by a single guid from table T</para>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="connection"></param>
+        /// <param name="id"></param>
+        /// <param name="transaction"></param>
+        /// <param name="commandTimeout"></param>
+        /// <returns>Returns a single entity by a single guid from table T.</returns>
+        public static async Task<T> GetAsync<T>(this IDbConnection connection, Guid id, IDbTransaction transaction = null, int? commandTimeout = null)
+        {
+            var currenttype = typeof(T);
+            var guidProps = GetGuidProperties(currenttype).ToList();
+
+            if (!guidProps.Any())
+                throw new ArgumentException("Get<T> only supports an entity with a [Guid] or Guid property");
+            if (guidProps.Count() > 1)
+                throw new ArgumentException("Get<T> only supports an entity with a single [Guid] or Guid property");
+
+            var guidKey = guidProps.First();
+            var name = GetTableName(currenttype);
+
+            var sb = new StringBuilder();
+            sb.Append("Select ");
+            //create a new empty instance of the type to get the base properties
+            BuildSelect(sb, GetScaffoldableProperties((T)Activator.CreateInstance(typeof(T))).ToArray());
+            sb.AppendFormat(" from {0}", name);
+            sb.Append(" where " + GetColumnName(guidKey) + " = @Id");
 
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);

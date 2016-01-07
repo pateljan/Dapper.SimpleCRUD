@@ -115,6 +115,48 @@ namespace Dapper
         /// <summary>
         /// <para>By default queries the table matching the class name</para>
         /// <para>-Table name can be overridden by adding an attribute on your class [Table("YourTableName")]</para>
+        /// <para>By default filters on the Id column</para>
+        /// <para>-Id column name can be overridden by adding an attribute on column [Guid]</para>
+        /// <para>Supports transaction and command timeout</para>
+        /// <para>Returns a single entity by a single guid from table T</para>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="connection"></param>
+        /// <param name="id"></param>
+        /// <param name="transaction"></param>
+        /// <param name="commandTimeout"></param>
+        /// <returns>Returns a single entity by a single guid from table T.</returns>
+        public static T Get<T>(this IDbConnection connection, Guid id, IDbTransaction transaction = null, int? commandTimeout = null)
+        {
+            var currenttype = typeof(T);
+            var guidProps = GetGuidProperties(currenttype).ToList();
+
+            if (!guidProps.Any())
+                throw new ArgumentException("Get<T> only supports an entity with a [Guid] attribute or Guid property name");
+            if (guidProps.Count() > 1)
+                throw new ArgumentException("Get<T> only supports an entity with a single [Guid] attribute or Guid property name");
+
+            var guidKey = guidProps.First();
+            var name = GetTableName(currenttype);
+            var sb = new StringBuilder();
+            sb.Append("Select ");
+            //create a new empty instance of the type to get the base properties
+            BuildSelect(sb, GetScaffoldableProperties((T)Activator.CreateInstance(typeof(T))).ToArray());
+            sb.AppendFormat(" from {0}", name);
+            sb.Append(" where " + GetColumnName(guidKey) + " = @Id");
+
+            var dynParms = new DynamicParameters();
+            dynParms.Add("@id", id);
+
+            if (Debugger.IsAttached)
+                Trace.WriteLine(String.Format("Get<{0}>: {1} with Id: {2}", currenttype, sb, id));
+
+            return connection.Query<T>(sb.ToString(), dynParms, transaction, true, commandTimeout).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// <para>By default queries the table matching the class name</para>
+        /// <para>-Table name can be overridden by adding an attribute on your class [Table("YourTableName")]</para>
         /// <para>whereConditions is an anonymous type to filter the results ex: new {Category = 1, SubCategory=2}</para>
         /// <para>Supports transaction and command timeout</para>
         /// <para>Returns a list of entities that match where conditions</para>
@@ -794,8 +836,7 @@ namespace Dapper
         //For Inserts and updates we have a whole entity so this method is used
         private static IEnumerable<PropertyInfo> GetIdProperties(object entity)
         {
-            var type = entity.GetType();
-            return GetIdProperties(type);
+            return GetIdProperties(entity.GetType());
         }
 
         //Get all properties that are named Id or have the Key attribute
@@ -806,14 +847,28 @@ namespace Dapper
             return tp.Any() ? tp : type.GetProperties().Where(p => p.Name == "Id");
         }
 
+        //Get all properties that are named Id or have the Key attribute
+        //For Inserts and updates we have a whole entity so this method is used
+        private static IEnumerable<PropertyInfo> GetGuidProperties(object entity)
+        {
+            return GetGuidProperties(entity.GetType());
+        }
+
+        //Get all properties that are named Id or have the Key attribute
+        //For Get(id) and Delete(id) we don't have an entity, just the type so this method is used
+        private static IEnumerable<PropertyInfo> GetGuidProperties(Type type)
+        {
+            var tp = type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType().Name == "GuidAttribute")).ToList();
+            return tp.Any() ? tp : type.GetProperties().Where(p => p.Name == "Guid");
+        }
+
 
         //Gets the table name for this entity
         //For Inserts and updates we have a whole entity so this method is used
         //Uses class name by default and overrides if the class has a Table attribute
         private static string GetTableName(object entity)
         {
-            var type = entity.GetType();
-            return GetTableName(type);
+            return GetTableName(entity.GetType());
         }
 
         //Gets the table name for this type
@@ -949,6 +1004,15 @@ namespace Dapper
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class KeyAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Optional Guid attribute.
+    /// You can use the System.ComponentModel.DataAnnotations version in its place to specify the column with Guid type of a poco
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
+    public class GuidAttribute : Attribute
     {
     }
 
