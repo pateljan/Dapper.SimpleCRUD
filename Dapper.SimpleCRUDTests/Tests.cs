@@ -65,6 +65,9 @@ namespace Dapper.SimpleCRUDTests
         public long CarId { get; set; }
         public string Make { get; set; }
         public string Model { get; set; }
+
+        [Guid]
+        public Guid VId { get; set; }
         #endregion
 
     }
@@ -197,6 +200,22 @@ namespace Dapper.SimpleCRUDTests
                 id.IsEqualTo(2147483650);
                 connection.Delete<BigCar>(id);
 
+            }
+        }
+
+        public void GetByGuid()
+        {
+            using (var connection = GetOpenConnection())
+            {
+
+                var vid = Guid.NewGuid();
+                var id = connection.Insert<long>(new BigCar { Make = "Big", Model = "Car", VId = vid });
+
+                var dbCar = connection.Get<BigCar>(vid);
+                dbCar.CarId.IsEqualTo(id);
+                dbCar.VId.IsEqualTo(vid);
+
+                connection.Delete<BigCar>(id);
             }
         }
 

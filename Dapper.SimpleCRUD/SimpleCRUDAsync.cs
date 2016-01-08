@@ -352,6 +352,7 @@ namespace Dapper
         ///  <param name="entityToUpdate"></param>
         /// <param name="transaction"></param>
         /// <param name="commandTimeout"></param>
+        /// <param name="token"></param>
         /// <returns>The number of effected records</returns>
         public static Task<int> UpdateAsync(this IDbConnection connection, object entityToUpdate, IDbTransaction transaction = null, int? commandTimeout = null, System.Threading.CancellationToken? token = null)
         {

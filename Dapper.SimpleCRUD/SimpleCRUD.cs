@@ -854,11 +854,14 @@ namespace Dapper
             return GetGuidProperties(entity.GetType());
         }
 
-        //Get all properties that are named Id or have the Key attribute
+        //Get all Guid properties that have the Key attribute or Guid attribute or named Guid
         //For Get(id) and Delete(id) we don't have an entity, just the type so this method is used
         private static IEnumerable<PropertyInfo> GetGuidProperties(Type type)
         {
-            var tp = type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType().Name == "GuidAttribute")).ToList();
+            var tp = type.GetProperties().Where(p => (p.PropertyType.IsAssignableFrom(typeof(Guid)) && p.GetCustomAttributes(true).Any(attr => attr.GetType().Name == "KeyAttribute")) ||
+                    p.GetCustomAttributes(true).Any(attr => attr.GetType().Name == "GuidAttribute"))
+                    .ToList();
+
             return tp.Any() ? tp : type.GetProperties().Where(p => p.Name == "Guid");
         }
 
