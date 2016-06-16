@@ -106,7 +106,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Get<{0}>: {1} with Id: {2}", currenttype, sb, id));
 
             return connection.Query<T>(sb.ToString(), dynParms, transaction, true, commandTimeout).FirstOrDefault();
@@ -148,7 +148,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Get<{0}>: {1} with Id: {2}", currenttype, sb, id));
 
             return connection.Query<T>(sb.ToString(), dynParms, transaction, true, commandTimeout).FirstOrDefault();
@@ -189,7 +189,7 @@ namespace Dapper
                 BuildWhere(sb, whereprops, (T)Activator.CreateInstance(typeof(T)), whereConditions);
             }
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("GetList<{0}>: {1}", currenttype, sb));
 
             return connection.Query<T>(sb.ToString(), whereConditions, transaction, true, commandTimeout);
@@ -225,7 +225,7 @@ namespace Dapper
 
             sb.Append(" " + conditions);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("GetList<{0}>: {1}", currenttype, sb));
 
             return connection.Query<T>(sb.ToString(), null, transaction, true, commandTimeout);
@@ -292,7 +292,7 @@ namespace Dapper
             query = query.Replace("{WhereClause}", conditions);
             query = query.Replace("{Offset}", ((pageNumber - 1) * rowsPerPage).ToString());
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("GetListPaged<{0}>: {1}", currenttype, query));
 
             return connection.Query<T>(query, null, transaction, true, commandTimeout);
@@ -384,7 +384,7 @@ namespace Dapper
                 keyHasPredefinedValue = true;
             }
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Insert: {0}", sb));
 
             var r = connection.Query(sb.ToString(), entityToInsert, transaction, true, commandTimeout);
@@ -447,7 +447,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToUpdate);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Update: {0}", sb));
 
             return connection.Execute(sb.ToString(), entityToUpdate, transaction, commandTimeout);
@@ -482,7 +482,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToDelete);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Delete: {0}", sb));
 
             return connection.Execute(sb.ToString(), entityToDelete, transaction, commandTimeout);
@@ -523,7 +523,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Delete<{0}> {1}", currenttype, sb));
 
             return connection.Execute(sb.ToString(), dynParms, transaction, commandTimeout);
@@ -559,7 +559,7 @@ namespace Dapper
                 BuildWhere(sb, whereprops, (T)Activator.CreateInstance(typeof(T)));
             }
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.Execute(sb.ToString(), whereConditions, transaction, commandTimeout);
@@ -595,7 +595,7 @@ namespace Dapper
             sb.AppendFormat("Delete from {0}", name);
             sb.Append(" " + conditions);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.Execute(sb.ToString(), null, transaction, commandTimeout);
@@ -623,7 +623,7 @@ namespace Dapper
             sb.AppendFormat(" from {0}", name);
             sb.Append(" " + conditions);
 
-            if (Debugger.IsAttached)
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("RecordCount<{0}>: {1}", currenttype, sb));
 
             return connection.Query<int>(sb.ToString(), null, transaction, true, commandTimeout).Single();
@@ -914,7 +914,8 @@ namespace Dapper
             if (columnattr != null)
             {
                 columnName = Encapsulate(columnattr.Name);
-                Trace.WriteLine(String.Format("Column name for type overridden from {0} to {1}", propertyInfo.Name, columnName));
+                if (Debugger.IsAttached)
+                    Trace.WriteLine(String.Format("Column name for type overridden from {0} to {1}", propertyInfo.Name, columnName));
             }
             return columnName;
         }
@@ -953,6 +954,16 @@ namespace Dapper
             MySQL,
         }
 
+        public static bool IsLogEnabled()
+        {
+            if (Debugger.IsAttached ||
+                (!string.IsNullOrEmpty(ConfigurationSettings.AppSettings["EnableDapperLog"]) && Convert.ToString(ConfigurationSettings.AppSettings["EnableDapperLog"]).ToLower() == "true"))
+            {
+                return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
