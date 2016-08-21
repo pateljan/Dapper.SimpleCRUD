@@ -384,8 +384,7 @@ namespace Dapper
                 keyHasPredefinedValue = true;
             }
 
-            if (IsLogEnabled())
-                Trace.WriteLine(String.Format("Insert: {0}", sb));
+            TraceWriteLine("Insert", name, sb, String.Format("Insert: {0}", sb));
 
             var r = connection.Query(sb.ToString(), entityToInsert, transaction, true, commandTimeout);
 
@@ -447,8 +446,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToUpdate);
 
-            if (IsLogEnabled())
-                Trace.WriteLine(String.Format("Update: {0}", sb));
+            TraceWriteLine("Update", name, sb, String.Format("Update: {0}", sb));
 
             return connection.Execute(sb.ToString(), entityToUpdate, transaction, commandTimeout);
         }
@@ -482,8 +480,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToDelete);
 
-            if (IsLogEnabled())
-                Trace.WriteLine(String.Format("Delete: {0}", sb));
+            TraceWriteLine("Delete", name, sb, String.Format("Delete: {0}", sb));
 
             return connection.Execute(sb.ToString(), entityToDelete, transaction, commandTimeout);
         }
@@ -523,8 +520,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            if (IsLogEnabled())
-                Trace.WriteLine(String.Format("Delete<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, String.Format("Delete<{0}> {1}", currenttype, sb));
 
             return connection.Execute(sb.ToString(), dynParms, transaction, commandTimeout);
         }
@@ -559,8 +555,7 @@ namespace Dapper
                 BuildWhere(sb, whereprops, (T)Activator.CreateInstance(typeof(T)));
             }
 
-            if (IsLogEnabled())
-                Trace.WriteLine(String.Format("DeleteList<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.Execute(sb.ToString(), whereConditions, transaction, commandTimeout);
         }
@@ -595,8 +590,7 @@ namespace Dapper
             sb.AppendFormat("Delete from {0}", name);
             sb.Append(" " + conditions);
 
-            if (IsLogEnabled())
-                Trace.WriteLine(String.Format("DeleteList<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.Execute(sb.ToString(), null, transaction, commandTimeout);
         }
@@ -963,6 +957,27 @@ namespace Dapper
             }
 
             return false;
+        }
+
+        public static bool IsAuditLogEnabled
+        {
+            get
+            {
+                bool isAuditLog = false;
+                bool.TryParse(ConfigurationSettings.AppSettings["EnableDapperAuditLog"], out isAuditLog);
+                return isAuditLog;
+            }
+        }
+
+        public static void TraceWriteLine(String actionType, String tableName, StringBuilder sb, String writeLine)
+        {
+            if (IsLogEnabled())
+                Trace.WriteLine(writeLine);
+
+            if (IsAuditLogEnabled)
+            {
+                Trace.Write(new { AuditType = actionType, TableName = tableName, Log = sb.ToString() });
+            }
         }
     }
 

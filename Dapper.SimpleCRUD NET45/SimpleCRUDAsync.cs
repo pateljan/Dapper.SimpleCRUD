@@ -37,7 +37,7 @@ namespace Dapper
                 throw new ArgumentException("Get<T> only supports an entity with a [Key] or Id property");
             if (idProps.Count() > 1)
                 throw new ArgumentException("Get<T> only supports an entity with a single [Key] or Id property");
-            
+
             var onlyKey = idProps.First();
             var name = GetTableName(currenttype);
 
@@ -51,7 +51,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            if(IsLogEnabled())
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Get<{0}>: {1} with Id: {2}", currenttype, sb, id));
 
             var query = await connection.QueryAsync<T>(sb.ToString(), dynParms, transaction, commandTimeout);
@@ -95,7 +95,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            if(IsLogEnabled())
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("Get<{0}>: {1} with Id: {2}", currenttype, sb, id));
 
             var query = await connection.QueryAsync<T>(sb.ToString(), dynParms, transaction, commandTimeout);
@@ -138,7 +138,7 @@ namespace Dapper
                 BuildWhere(sb, whereprops, (T)Activator.CreateInstance(typeof(T)), whereConditions);
             }
 
-            if(IsLogEnabled())
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("GetList<{0}>: {1}", currenttype, sb));
 
             return connection.QueryAsync<T>(sb.ToString(), whereConditions, transaction, commandTimeout);
@@ -175,7 +175,7 @@ namespace Dapper
 
             sb.Append(" " + conditions);
 
-            if(IsLogEnabled())
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("GetList<{0}>: {1}", currenttype, sb));
 
             return connection.QueryAsync<T>(sb.ToString(), null, transaction, commandTimeout);
@@ -236,7 +236,7 @@ namespace Dapper
             query = query.Replace("{WhereClause}", conditions);
             query = query.Replace("{Offset}", ((pageNumber - 1) * rowsPerPage).ToString());
 
-            if(IsLogEnabled())
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("GetListPaged<{0}>: {1}", currenttype, query));
 
             return connection.QueryAsync<T>(query);
@@ -327,8 +327,7 @@ namespace Dapper
                 keyHasPredefinedValue = true;
             }
 
-            if(IsLogEnabled())
-                Trace.WriteLine(String.Format("Insert: {0}", sb));
+            TraceWriteLine("Insert", name, sb, String.Format("Insert: {0}", sb));
 
             if (keytype == typeof(Guid) || keyHasPredefinedValue)
             {
@@ -390,8 +389,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToUpdate);
 
-            if(IsLogEnabled())
-                Trace.WriteLine(String.Format("Update: {0}", sb));
+            TraceWriteLine("Update", name, sb, String.Format("Update: {0}", sb));
 
             System.Threading.CancellationToken cancelToken = token ?? default(System.Threading.CancellationToken);
             return connection.ExecuteAsync(new CommandDefinition(sb.ToString(), entityToUpdate, transaction, commandTimeout, cancellationToken: cancelToken));
@@ -425,8 +423,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToDelete);
 
-            if(IsLogEnabled())
-                Trace.WriteLine(String.Format("Delete: {0}", sb));
+            TraceWriteLine("Delete", name, sb, String.Format("Delete: {0}", sb));
 
             return connection.ExecuteAsync(sb.ToString(), entityToDelete, transaction, commandTimeout);
         }
@@ -466,8 +463,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            if(IsLogEnabled())
-                Trace.WriteLine(String.Format("Delete<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, String.Format("Delete<{0}> {1}", currenttype, sb));
 
             return connection.ExecuteAsync(sb.ToString(), dynParms, transaction, commandTimeout);
         }
@@ -503,8 +499,7 @@ namespace Dapper
                 BuildWhere(sb, whereprops, (T)Activator.CreateInstance(typeof(T)));
             }
 
-            if(IsLogEnabled())
-                Trace.WriteLine(String.Format("DeleteList<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.ExecuteAsync(sb.ToString(), whereConditions, transaction, commandTimeout);
         }
@@ -539,8 +534,7 @@ namespace Dapper
             sb.AppendFormat("Delete from {0}", name);
             sb.Append(" " + conditions);
 
-            if(IsLogEnabled())
-                Trace.WriteLine(String.Format("DeleteList<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.ExecuteAsync(sb.ToString(), null, transaction, commandTimeout);
         }
@@ -566,7 +560,7 @@ namespace Dapper
             sb.AppendFormat(" from {0}", name);
             sb.Append(" " + conditions);
 
-            if(IsLogEnabled())
+            if (IsLogEnabled())
                 Trace.WriteLine(String.Format("RecordCount<{0}>: {1}", currenttype, sb));
 
             var query = await connection.QueryAsync<int>(sb.ToString(), null, transaction, commandTimeout);
