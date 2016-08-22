@@ -327,7 +327,7 @@ namespace Dapper
                 keyHasPredefinedValue = true;
             }
 
-            TraceWriteLine("Insert", name, sb, String.Format("Insert: {0}", sb));
+            TraceWriteLine("Insert", name, sb, entityToInsert, String.Format("Insert: {0}", sb));
 
             if (keytype == typeof(Guid) || keyHasPredefinedValue)
             {
@@ -389,7 +389,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToUpdate);
 
-            TraceWriteLine("Update", name, sb, String.Format("Update: {0}", sb));
+            TraceWriteLine("Update", name, sb, entityToUpdate, String.Format("Update: {0}", sb));
 
             System.Threading.CancellationToken cancelToken = token ?? default(System.Threading.CancellationToken);
             return connection.ExecuteAsync(new CommandDefinition(sb.ToString(), entityToUpdate, transaction, commandTimeout, cancellationToken: cancelToken));
@@ -423,7 +423,7 @@ namespace Dapper
             sb.Append(" where ");
             BuildWhere(sb, idProps, entityToDelete);
 
-            TraceWriteLine("Delete", name, sb, String.Format("Delete: {0}", sb));
+            TraceWriteLine("Delete", name, sb, entityToDelete, String.Format("Delete: {0}", sb));
 
             return connection.ExecuteAsync(sb.ToString(), entityToDelete, transaction, commandTimeout);
         }
@@ -463,7 +463,7 @@ namespace Dapper
             var dynParms = new DynamicParameters();
             dynParms.Add("@id", id);
 
-            TraceWriteLine("Delete", name, sb, String.Format("Delete<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, id, String.Format("Delete<{0}> {1}", currenttype, sb));
 
             return connection.ExecuteAsync(sb.ToString(), dynParms, transaction, commandTimeout);
         }
@@ -499,7 +499,7 @@ namespace Dapper
                 BuildWhere(sb, whereprops, (T)Activator.CreateInstance(typeof(T)));
             }
 
-            TraceWriteLine("Delete", name, sb, String.Format("DeleteList<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, whereprops, String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.ExecuteAsync(sb.ToString(), whereConditions, transaction, commandTimeout);
         }
@@ -534,7 +534,7 @@ namespace Dapper
             sb.AppendFormat("Delete from {0}", name);
             sb.Append(" " + conditions);
 
-            TraceWriteLine("Delete", name, sb, String.Format("DeleteList<{0}> {1}", currenttype, sb));
+            TraceWriteLine("Delete", name, sb, null, String.Format("DeleteList<{0}> {1}", currenttype, sb));
 
             return connection.ExecuteAsync(sb.ToString(), null, transaction, commandTimeout);
         }
